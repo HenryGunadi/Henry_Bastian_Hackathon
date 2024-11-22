@@ -11,6 +11,17 @@ type AssetWallet = {
   assetName: string;
   fingerprint: string;
   quantity: string;
+};
+
+type ToggleAlert = {
+  success: "Success" | "Alert" | "Error";
+  msg: string;
+  loading: boolean;
+  alert: boolean;
+};
+
+export interface AppContexts {
+  toggleAlert: (success: "Success" | "Alert" | "Error", msg: string, loading: boolean, alert: boolean) => void;
 }
 
-export type { Wallet, AssetWallet}
+export type { Wallet, AssetWallet, ToggleAlert };

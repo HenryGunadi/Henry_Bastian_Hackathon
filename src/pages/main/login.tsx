@@ -1,7 +1,6 @@
 // NOTE : FIX ALERT
-
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/router";
+import { useState, useEffect, use, useContext } from "react";
+import { useRouter } from "next/navigation";
 import { CardanoWallet, useWallet } from "@meshsdk/react";
 import { AssetExtended, BrowserWallet } from "@meshsdk/core";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,9 @@ import { Select } from "@/components/ui/select";
 import { SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import login_wallpaper1 from "../../../public/assets/login_wallpaper1.jpg";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {AssetWallet, Wallet} from "../../types/types";
+import { AppContexts, AssetWallet, Wallet } from "../../types/types";
+import { AppContext } from "../_app";
+import { signIn, useSession } from "next-auth/react";
 
 // Environment variable berisi nama NFT dalam format Hex dan policyID
 const token1 = process.env.NEXT_PUBLIC_TOKEN_1;
@@ -17,13 +18,21 @@ const token2 = process.env.NEXT_PUBLIC_TOKEN_2;
 const token3 = process.env.NEXT_PUBLIC_TOKEN_3;
 
 export default function login() {
-  const router = useRouter();
-  const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
-  const [wallet, setWallet] = useState<BrowserWallet>();
-  const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([])
-  const [alert, setAlert] = useState<boolean>(false)
+  // USE CONTEXT
+  const { toggleAlert } = useContext(AppContext) as AppContexts;
 
-  // get available wallets
+  // STATES
+  const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
+  const [wallet, setWallet] = useState<BrowserWallet | undefined>(undefined);
+  const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
+  const [alert, setAlert] = useState<boolean>(false);
+  const [selectedWallet, setSelectedWallet] = useState<string>("");
+
+  // AUTH
+  const router = useRouter();
+  const { status } = useSession();
+
+  // GET AVAILABLE WALLETS
   async function handleGetWallets() {
     try {
       const wallets = await BrowserWallet.getAvailableWallets();
@@ -44,48 +53,56 @@ export default function login() {
     }
   }, [availableWallets]);
 
-  // connect wallet
+  // CONNECT WALLET
   async function connectWallet(value: string) {
     try {
-      console.log("wallet name : ", value)
+      console.log("wallet name : ", value);
       const wallet = await BrowserWallet.enable(value);
 
-      console.log(wallet)
-      setWallet(wallet)
+      console.log(wallet);
+      setWallet(wallet);
     } catch (err) {
       console.error(err);
     }
   }
 
   useEffect(() => {
-    console.log(wallet)
-  }, [wallet])
+    if (selectedWallet != "" && wallet != undefined) {
+      setSelectedWallet("");
+    }
+  }, [selectedWallet]);
 
-  // get assets
+  useEffect(() => {
+    console.log(wallet);
+  }, [wallet]);
+
+  // GET WALLET ASSETS
   async function getWalletAssets() {
     try {
-      const assets = await wallet?.getAssets()
+      const assets = await wallet?.getAssets();
 
       if (assets?.length != 0) {
-        console.log(assets)
-        setWalletAssets(assets)
+        console.log("Wallet assets : ", assets);
+        setWalletAssets(assets);
+        toggleAlert("Success", "Assets detected.", false, true);
       } else {
-        setAlert(prev => !prev) // FIX alert
+        toggleAlert("Error", "No assets detected. Please deposit or connect another wallet.", false, true);
       }
     } catch (err) {
-      console.log(err)
+      console.log(err);
     }
   }
 
   useEffect(() => {
-    console.log("fetching assets")
-    getWalletAssets()
-  }, [wallet])
+    if (selectedWallet != "") {
+      getWalletAssets();
+    }
+  }, [wallet]);
 
   return (
     <div className="text-zinc-800 overflow-x-hidden box-border w-screen h-screen flex justify-center items-center text-sm">
       {/* login */}
-      <div className="w-3/5 h-fit border border-black rounded-md p-8 flex">
+      <div className="w-3/5 h-3/5 border border-black rounded-md p-8 flex">
         <form className="w-5/12 flex flex-col flex-1 justify-between">
           <div>
             <h1 className="font-semibold text-3xl py-2">Welcome Back!</h1>
@@ -94,9 +111,13 @@ export default function login() {
 
           <div className="w-full pt-24 flex flex-col">
             {/* available wallets */}
-            <Select onValueChange={(e) => {
-              connectWallet(e)
-            }}>
+            <Select
+              value={selectedWallet}
+              onValueChange={(e) => {
+                connectWallet(e);
+                setSelectedWallet(e);
+              }}
+            >
               <SelectTrigger className="w-full border rounded-md shadow-md py-2">
                 <SelectValue placeholder="Select a wallet" />
               </SelectTrigger>
@@ -105,14 +126,12 @@ export default function login() {
                 <ScrollArea>
                   <SelectGroup>
                     <SelectLabel className="font-semibold">Available Wallets</SelectLabel>
-                      {availableWallets.length != 0 &&
+                    {availableWallets.length != 0 &&
                       availableWallets.map((value, index) => (
                         <SelectItem key={index} value={value.name} className="hover:cursor-pointer">
                           <div className="flex w-full justify-between gap-2 items-center z-50">
-                            <img src={value.icon} alt="" className="w-6 h-6 object-cover object-center"/>
-                            <p>
-                              {value.name}
-                            </p>
+                            <img src={value.icon} alt="" className="w-6 h-6 object-cover object-center" />
+                            <p>{value.name}</p>
                           </div>
                         </SelectItem>
                       ))}
