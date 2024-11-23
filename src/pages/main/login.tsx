@@ -1,7 +1,6 @@
 // NOTE : FIX ALERT
 import { useState, useEffect, use, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { CardanoWallet, useWallet } from "@meshsdk/react";
 import { AssetExtended, BrowserWallet } from "@meshsdk/core";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -11,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppContexts, AssetWallet, Wallet } from "../../types/types";
 import { AppContext } from "../_app";
 import { signIn, useSession } from "next-auth/react";
+import { loginHandler } from "../../services/authService";
+import { Address } from "cluster";
 
 // Environment variable berisi nama NFT dalam format Hex dan policyID
 const token1 = process.env.NEXT_PUBLIC_TOKEN_1;
@@ -25,8 +26,8 @@ export default function login() {
   const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
   const [wallet, setWallet] = useState<BrowserWallet | undefined>(undefined);
   const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
-  const [alert, setAlert] = useState<boolean>(false);
   const [selectedWallet, setSelectedWallet] = useState<string>("");
+  const [];
 
   // AUTH
   const router = useRouter();
@@ -66,6 +67,12 @@ export default function login() {
     }
   }
 
+  async function getStakeAddress() {
+    if (wallet != undefined) {
+      const userAddress = await wallet.getUsedAddress();
+    }
+  }
+
   useEffect(() => {
     if (selectedWallet != "" && wallet != undefined) {
       setSelectedWallet("");
@@ -98,6 +105,8 @@ export default function login() {
       getWalletAssets();
     }
   }, [wallet]);
+
+  // USER WALLET NONCE
 
   return (
     <div className="text-zinc-800 overflow-x-hidden box-border w-screen h-screen flex justify-center items-center text-sm">
@@ -144,7 +153,14 @@ export default function login() {
               Dont have a wallet?
             </a>
 
-            <Button className="rounded-full w-full mt-3 py-3">Login</Button>
+            <Button
+              className="rounded-full w-full mt-3 py-3"
+              onClick={() => {
+                loginHandler(); // NEED A PAYLOAD
+              }}
+            >
+              Login
+            </Button>
           </div>
         </form>
 
