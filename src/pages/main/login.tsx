@@ -27,7 +27,6 @@ export default function login() {
   const [wallet, setWallet] = useState<BrowserWallet | undefined>(undefined);
   const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
   const [selectedWallet, setSelectedWallet] = useState<string>("");
-  const [];
 
   // AUTH
   const router = useRouter();
@@ -155,9 +154,9 @@ export default function login() {
 
             <Button
               className="rounded-full w-full mt-3 py-3"
-              onClick={() => {
-                loginHandler(); // NEED A PAYLOAD
-              }}
+              // onClick={() => {
+              //   loginHandler(); // NEED A PAYLOAD
+              // }}
             >
               Login
             </Button>

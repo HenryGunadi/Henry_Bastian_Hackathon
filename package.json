@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next package-lock.json node_modules",
-    "backend": "nodemon ./server/src/server.ts"
+    "backend": "nodemon ./server/src/index.ts"
   },
   "dependencies": {
     "@meshsdk/core": "^1.7.3",
