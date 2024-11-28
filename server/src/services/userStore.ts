@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import User, {UserDoc} from '../../db/models/user';
+import {UserDoc} from '../../db/models/user';
 import {UserStoreInterface} from '../types/types';
 
 class UserStore implements UserStoreInterface {

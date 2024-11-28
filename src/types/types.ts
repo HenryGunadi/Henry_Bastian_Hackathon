@@ -22,9 +22,13 @@ type ToggleAlert = {
 	alert: boolean;
 };
 
+type LoginPayload = {
+	stakeAddress: string;
+};
 
 export interface AppContexts {
 	toggleAlert: (success: 'Success' | 'Alert' | 'Error', msg: string, loading: boolean, alert: boolean) => void;
+	toggleLoading: (loading: boolean) => void;
 }
 
-export type {Wallet, AssetWallet, ToggleAlert};
+export type {Wallet, AssetWallet, ToggleAlert, LoginPayload};

@@ -5,7 +5,7 @@ export interface UserDoc extends Document {
 	stakeAddress: string;
 	nonce: string | undefined;
 	verified: boolean;
-	}
+}
 
 // mongoDB schemas
 const userSchema = new mongoose.Schema({
@@ -14,4 +14,6 @@ const userSchema = new mongoose.Schema({
 	verified: {type: Boolean, required: true},
 });
 
-export default mongoose.model<UserDoc>('User', userSchema);
+const User = mongoose.model<UserDoc>('User', userSchema, 'users');
+
+export default User;
