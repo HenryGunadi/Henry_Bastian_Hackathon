@@ -2,7 +2,7 @@ import {CustomError} from './CustomError';
 
 export default class BadRequestError extends CustomError {
 	private static readonly _statusCode = 400;
-	private readonly _code: number;
+	private _code: number;
 	private readonly _logging: boolean;
 	private readonly _context: {[key: string]: any};
 
@@ -18,6 +18,7 @@ export default class BadRequestError extends CustomError {
 		Object.setPrototypeOf(this, BadRequestError.prototype);
 	}
 
+	// get set
 	get errors() {
 		return [{message: this.message, context: this._context}];
 	}
@@ -28,5 +29,13 @@ export default class BadRequestError extends CustomError {
 
 	get logging() {
 		return this._logging;
+	}
+
+	public set statusCode(code: number) {
+		this._code = code;
+	}
+
+	public set message(msg: string) {
+		this.message = msg;
 	}
 }

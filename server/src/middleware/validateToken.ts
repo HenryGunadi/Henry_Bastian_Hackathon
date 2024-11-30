@@ -1,19 +1,34 @@
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import {NextFunction, Request, Response} from 'express';
+import jwt, {JsonWebTokenError} from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import BadRequestError from '../classes/BadRequestError';
 
-export default function (req: Request, res: Response, next: NextFunction) {
-  const authCookie = req.headers["auth_cookie"]?.[0];
-  const secret = process.env.ACCESS_TOKEN_SECRET || "";
+dotenv.config();
 
-  if (authCookie == undefined) return res.sendStatus(401).json({ message: "token not found" });
-  if (secret == "") return res.sendStatus(500).json({ message: "internal server error" });
+export default async function validateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+	const authCookie = req.cookies['auth_cookie'];
+	const secret = process.env.ACCESS_TOKEN_SECRET || '';
+	const error = new BadRequestError();
 
-  // If there is a cookie, verify it
-  jwt.verify(authCookie, secret, (err, user) => {
-    // If there is an error, return an error
-    if (err) return res.sendStatus(403);
+	console.log('auth cookie : ', authCookie);
 
-    // If there is no error, continue the execution
-    next();
-  });
+	if (authCookie == undefined) {
+		error.statusCode = 401;
+		error.message = 'token not found';
+		next(error);
+	}
+	if (secret == '') {
+		error.statusCode = 500;
+		error.message = 'internal server error';
+		next(error);
+	}
+
+	// If there is a cookie, verify it
+	jwt.verify(authCookie!, secret, (err: JsonWebTokenError | null) => {
+		// If there is an error, return an error
+		if (err) return res.sendStatus(403);
+
+		// If there is no error, continue the execution
+		next();
+	});
 }

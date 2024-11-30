@@ -25,7 +25,4 @@ router.post('/login', loginValidator, (req: Request, res: Response, next: NextFu
 	userHandler.login(req, res, next);
 });
 
-// error middleware
-router.use(errorHandler);
-
 export default router;
