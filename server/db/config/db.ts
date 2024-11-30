@@ -6,8 +6,6 @@ export const connectDB = async () => {
   dotenv.config();
   const dbURL = process.env.DATABASE_URL;
 
-  console.log("DB URL : ", dbURL);
-
   // handle if url not found
   if (!dbURL) {
     console.log("DB URL not found!");
