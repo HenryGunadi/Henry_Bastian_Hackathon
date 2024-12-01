@@ -20,11 +20,10 @@ const token3 = process.env.NEXT_PUBLIC_TOKEN_3;
 
 export default function login() {
 	// USE CONTEXT
-	const {toggleAlert, toggleLoading} = useContext(AppContext) as AppContexts;
+	const {toggleAlert, toggleLoading, wallet, toggleWallet} = useContext(AppContext) as AppContexts;
 
 	// STATES
 	const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
-	const [wallet, setWallet] = useState<BrowserWallet | undefined>(undefined);
 	const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
 	const [selectedWallet, setSelectedWallet] = useState<string>('');
 	const [nonce, setNonce] = useState<string>('');
@@ -60,7 +59,7 @@ export default function login() {
 			const wallet = await BrowserWallet.enable(value);
 
 			console.log(wallet);
-			setWallet(wallet);
+			toggleWallet(wallet);
 		} catch (err) {
 			console.error(err);
 		}

@@ -1,91 +1,103 @@
-import "@/styles/globals.css";
-import "tailwindcss/tailwind.css";
-import type { AppProps } from "next/app";
-import { MeshProvider, useAssets } from "@meshsdk/react";
-import Head from "next/head";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { createContext, useContext, useEffect, useState } from "react";
-import { AppContexts, ToggleAlert } from "@/types/types";
-import { AlertCircle, ToggleLeft } from "lucide-react";
-import { clearLine } from "readline";
-import { SessionProvider } from "next-auth/react";
-import { Progress } from "@/components/ui/progress";
+import '@/styles/globals.css';
+import 'tailwindcss/tailwind.css';
+import type {AppProps} from 'next/app';
+import {MeshProvider, useAssets} from '@meshsdk/react';
+import Head from 'next/head';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
+import {createContext, useContext, useEffect, useState} from 'react';
+import {AppContexts, ToggleAlert} from '@/types/types';
+import {AlertCircle, ToggleLeft} from 'lucide-react';
+import {clearLine} from 'readline';
+import {SessionProvider} from 'next-auth/react';
+import {Progress} from '@/components/ui/progress';
+import {BrowserWallet} from '@meshsdk/core';
 
 // USE CONTEXT
 export const AppContext = createContext<AppContexts | undefined>(undefined);
 
-export default function App({ Component, pageProps }: AppProps) {
-  // states
-  const [alert, setAlert] = useState<ToggleAlert>({
-    success: "Alert",
-    msg: "",
-    alert: false,
-  });
-  const [loading, setLoading] = useState<boolean>(false);
+export default function App({Component, pageProps}: AppProps) {
+	// states
+	const [alert, setAlert] = useState<ToggleAlert>({
+		success: 'Alert',
+		msg: '',
+		alert: false,
+	});
+	const [loading, setLoading] = useState<boolean>(false);
+	const [wallet, setWallet] = useState<BrowserWallet | undefined>(undefined);
 
-  // ALERT TRIGGER
-  const toggleAlert = (success: "Success" | "Error" | "Alert", msg: string, alert: boolean) => {
-    setAlert({
-      success: success,
-      msg: msg,
-      alert: alert,
-    });
-  };
+	// setWallet
+	function toggleWallet(wallet: BrowserWallet) {
+		setWallet(wallet);
+	}
 
-  const toggleLoading = (loading: boolean) => {
-    setLoading(loading);
-  };
+	// ALERT TRIGGER
+	const toggleAlert = (success: 'Success' | 'Error' | 'Alert', msg: string, alert: boolean) => {
+		setAlert({
+			success: success,
+			msg: msg,
+			alert: alert,
+		});
+	};
 
-  // CLEAR ALERT STATE
-  function clearAlert() {
-    setAlert({
-      success: "Alert",
-      msg: "",
-      alert: false,
-    });
-  }
+	const toggleLoading = (loading: boolean) => {
+		setLoading(loading);
+	};
 
-  // ALERT TIMEOUT
-  useEffect(() => {
-    if (alert.alert) {
-      const timer = setTimeout(() => {
-        clearAlert();
-      }, 2000);
+	// CLEAR ALERT STATE
+	function clearAlert() {
+		setAlert({
+			success: 'Alert',
+			msg: '',
+			alert: false,
+		});
+	}
 
-      return () => clearTimeout(timer);
-    }
-  }, [alert]);
+	// ALERT TIMEOUT
+	useEffect(() => {
+		if (alert.alert) {
+			const timer = setTimeout(() => {
+				clearAlert();
+			}, 2000);
 
-  return (
-    <AppContext.Provider
-      value={{
-        toggleAlert,
-        toggleLoading,
-      }}
-    >
-      <SessionProvider>
-        <MeshProvider>
-          <Head>
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" />
-            <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet" />
-          </Head>
+			return () => clearTimeout(timer);
+		}
+	}, [alert]);
 
-          <div className="overflow-x-hidden relative">
-            {alert.alert && (
-              <Alert variant={alert.success === "Error" ? "destructive" : "default"} className={alert.success === "Success" ? "text-green-500 border-green-500" : ""}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{alert.success}</AlertTitle>
-                <AlertDescription>{alert.msg}</AlertDescription>
-              </Alert>
-            )}
+	return (
+		<AppContext.Provider
+			value={{
+				toggleAlert,
+				toggleLoading,
+				toggleWallet,
+				wallet,
+			}}
+		>
+			<SessionProvider>
+				<MeshProvider>
+					<Head>
+						<link rel="preconnect" href="https://fonts.googleapis.com" />
+						<link rel="preconnect" href="https://fonts.gstatic.com" />
+						<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet" />
+					</Head>
 
-            {loading && <Progress value={60} className="w-[100%] absolute" />}
+					<div className="overflow-x-hidden relative">
+						{alert.alert && (
+							<Alert
+								variant={alert.success === 'Error' ? 'destructive' : 'default'}
+								className={alert.success === 'Success' ? 'text-green-500 border-green-500' : ''}
+							>
+								<AlertCircle className="h-4 w-4" />
+								<AlertTitle>{alert.success}</AlertTitle>
+								<AlertDescription>{alert.msg}</AlertDescription>
+							</Alert>
+						)}
 
-            <Component {...pageProps} />
-          </div>
-        </MeshProvider>
-      </SessionProvider>
-    </AppContext.Provider>
-  );
+						{loading && <Progress value={60} className="w-[100%] absolute" />}
+
+						<Component {...pageProps} />
+					</div>
+				</MeshProvider>
+			</SessionProvider>
+		</AppContext.Provider>
+	);
 }
