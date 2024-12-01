@@ -1,44 +1,56 @@
-import {authenticateUser} from '@/services/authService';
-import dotenv from 'dotenv';
-import {useRouter} from 'next/router';
-import {useContext, useEffect, useState} from 'react';
-import {AppContext} from '../_app';
-import {AppContexts} from '@/types/types';
+import { authenticateUser } from "@/services/authService";
+import dotenv from "dotenv";
+import { useRouter } from "next/router";
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../_app";
+import { AppContexts } from "@/types/types";
+import { BrowserWallet } from "@meshsdk/core";
 
 dotenv.config();
 
 export default function dashboard() {
-	const [validated, setValidated] = useState<boolean>(false);
-	const {toggleLoading} = useContext(AppContext) as AppContexts;
+  let wallet: BrowserWallet | undefined;
+  const [validated, setValidated] = useState<boolean>(false);
+  const { toggleLoading } = useContext(AppContext) as AppContexts;
 
-	const router = useRouter();
+  const router = useRouter();
 
-	// authenticate user from backend
-	const dashboardMainAPI = 'http://localhost:8080/users/dashboard';
+  // authenticate user from backend
+  const dashboardMainAPI = "http://localhost:8080/users/dashboard";
 
-	useEffect(() => {
-		const checkAuthenticaion = async () => {
-			const authenticated = await authenticateUser(dashboardMainAPI);
+  useEffect(() => {
+    const localWallet = localStorage.getItem("wallet");
 
-			console.log('Authenticated : ', authenticated);
+    localWallet && (wallet = JSON.parse(localWallet));
+  }, []);
 
-			if (!authenticated) {
-				router.push('/main/login');
-			} else {
-				setValidated(true);
-			}
-		};
+  useEffect(() => {
+    const checkAuthenticaion = async () => {
+      const authenticated = await authenticateUser(dashboardMainAPI);
 
-		checkAuthenticaion();
-	}, []);
+      console.log("Authenticated : ", authenticated);
 
-	if (!validated) {
-		return <div></div>;
-	}
+      if (!authenticated) {
+        router.push("/main/login");
+      } else {
+        setValidated(true);
+      }
+    };
 
-	return (
-		<div>
-			<h1>Dashboard</h1>
-		</div>
-	);
+    checkAuthenticaion();
+  }, []);
+
+  useEffect(() => {
+    console.log("Wallet from dashboard : ", wallet);
+  }, []);
+
+  if (!validated) {
+    return <div></div>;
+  }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+    </div>
+  );
 }
