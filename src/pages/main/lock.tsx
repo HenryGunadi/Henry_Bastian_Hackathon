@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../_app";
 import { AppContexts } from "@/types/types";
 import { useWallet } from "@meshsdk/react";
+import { UserRoundPenIcon } from "lucide-react";
 
 // block frost api key
 const blockFrostAPIKey = process.env.NEXT_PUBLIC_BLOCKFROST_API || "";
@@ -12,8 +13,6 @@ const blockFrostAPIKey = process.env.NEXT_PUBLIC_BLOCKFROST_API || "";
 const nodeProvider = new BlockfrostProvider(blockFrostAPIKey!);
 
 export default function Lock() {
-  // const { wallet } = useContext(AppContext) as AppContexts;
-  const { connected, wallet } = useWallet();
   const [amount, setAmount] = useState<number>(0);
 
   // handle deposit
@@ -48,9 +47,10 @@ export default function Lock() {
 
   // get wallet info
   async function getWalletInfo() {
-    const utxos = await wallet.getUtxos();
-    const collateral = await wallet.getCollateral();
-    const walletAddress = await wallet.getChangeAddress();
+    console.log(typeof wallet);
+    const utxos = await wallet?.getUtxos();
+    const collateral = await wallet?.getCollateral();
+    const walletAddress = await wallet?.getChangeAddress();
 
     console.log("UTXOS : ", utxos);
     console.log("Collaterals : ", collateral);
@@ -60,9 +60,8 @@ export default function Lock() {
   }
 
   useEffect(() => {
-    console.log("Wallet from lock : ", wallet);
     getWalletInfo();
-  }, [wallet]);
+  }, []);
 
   return (
     <div>

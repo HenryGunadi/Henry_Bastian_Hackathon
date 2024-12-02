@@ -12,6 +12,8 @@ import { AppContext } from "../_app";
 import { signIn, useSession } from "next-auth/react";
 import { loginHandler } from "../../services/authService";
 import { Address } from "cluster";
+import { useDispatch } from "react-redux";
+import { setWallet } from "@/redux/actions";
 
 // Environment variable berisi nama NFT dalam format Hex dan policyID
 const token1 = process.env.NEXT_PUBLIC_TOKEN_1;
@@ -19,19 +21,23 @@ const token2 = process.env.NEXT_PUBLIC_TOKEN_2;
 const token3 = process.env.NEXT_PUBLIC_TOKEN_3;
 
 export default function login() {
-  // USE CONTEXT
-  const { toggleAlert, toggleLoading, wallet, toggleWallet } = useContext(AppContext) as AppContexts;
+  // redux
+  const dispatch = useDispatch();
 
-  // STATES
+  // router
+  const router = useRouter();
+
+  // use contexts
+  const { toggleAlert, toggleLoading } = useContext(AppContext) as AppContexts;
+
+  // states
   const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
   const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
   const [selectedWallet, setSelectedWallet] = useState<string>("");
   const [nonce, setNonce] = useState<string>("");
 
-  // router
-  const router = useRouter();
-
-  // GET AVAILABLE WALLETS
+  // FUNCTIONS
+  // get available wallets
   async function handleGetWallets() {
     try {
       const wallets = await BrowserWallet.getAvailableWallets();
@@ -42,33 +48,22 @@ export default function login() {
     }
   }
 
-  useEffect(() => {
-    handleGetWallets();
-  }, []);
-
-  useEffect(() => {
-    if (availableWallets.length != 0) {
-      console.log(availableWallets);
-    }
-  }, [availableWallets]);
-
-  // CONNECT WALLET
-  async function connectWallet(value: string) {
+  // connect wallet
+  async function connectWallet(walletName: string) {
     try {
-      console.log("wallet name : ", value);
-      const wlt = await BrowserWallet.enable(value);
+      console.log("wallet name : ", walletName);
+      const wallet = await BrowserWallet.enable(walletName);
 
-      toggleWallet(wlt);
+      if (wallet) {
+        // update state store
+        dispatch(setWallet(wallet));
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Error connecting wallet : ", err);
     }
   }
 
-  useEffect(() => {
-    console.log("Wallet : ", wallet);
-  }, [wallet]);
-
-  // GET WALLET ASSETS
+  // get wallet assets
   async function getWalletAssets() {
     try {
       const assets = await wallet?.getAssets();
@@ -84,6 +79,20 @@ export default function login() {
       console.log(err);
     }
   }
+
+  useEffect(() => {
+    handleGetWallets();
+  }, []);
+
+  useEffect(() => {
+    if (availableWallets.length != 0) {
+      console.log(availableWallets);
+    }
+  }, [availableWallets]);
+
+  useEffect(() => {
+    console.log("Wallet : ", wallet);
+  }, [wallet]);
 
   useEffect(() => {
     if (selectedWallet != "") {

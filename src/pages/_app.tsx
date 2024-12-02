@@ -17,30 +17,29 @@ export const AppContext = createContext<AppContexts | undefined>(undefined);
 
 export default function App({ Component, pageProps }: AppProps) {
   // states
+  const [loading, setLoading] = useState<boolean>(false);
   const [alert, setAlert] = useState<ToggleAlert>({
     success: "Alert",
     msg: "",
     alert: false,
   });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [wallet, setWallet] = useState<BrowserWallet | null>(null);
 
   // get wallet from localstorage
-  // useEffect(() => {
-  //   const retrievedWlt = localStorage.getItem("wallet");
-  //   console.log("wallet from local storage : ", retrievedWlt);
+  useEffect(() => {
+    const retrievedWlt = localStorage.getItem("wallet");
+    console.log("wallet from local storage : ", retrievedWlt);
 
-  //   const wlt: BrowserWallet | null = retrievedWlt ? JSON.parse(retrievedWlt) : null;
-  //   setWallet(wlt);
-  // }, []);
+    const wlt: BrowserWallet | null = retrievedWlt ? JSON.parse(retrievedWlt) : null;
+    setWallet(wlt);
+  }, []);
 
-  // // update persistent wallet state from localstorage
-  // useEffect(() => {
-  //   if (wallet) {
-  //     localStorage.setItem("wallet", JSON.stringify(wallet));
-  //     console.log("Updated wallet in localStorage:", wallet);
-  //   }
-  // }, [wallet]);
+  // update persistent wallet state from localstorage
+  useEffect(() => {
+    if (wallet) {
+      localStorage.setItem("wallet", JSON.stringify(wallet));
+      console.log("Updated wallet in localStorage:", wallet);
+    }
+  }, [wallet]);
 
   // setWallet
   function toggleWallet(wallet: BrowserWallet) {
@@ -85,8 +84,6 @@ export default function App({ Component, pageProps }: AppProps) {
       value={{
         toggleAlert,
         toggleLoading,
-        toggleWallet,
-        wallet,
       }}
     >
       <SessionProvider>
