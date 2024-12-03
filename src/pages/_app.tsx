@@ -1,13 +1,12 @@
 import "@/styles/globals.css";
 import "tailwindcss/tailwind.css";
 import type { AppProps } from "next/app";
-import { MeshProvider, useAssets } from "@meshsdk/react";
+import { MeshProvider } from "@meshsdk/react";
 import Head from "next/head";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { createContext, useContext, useEffect, useState } from "react";
-import { AppContexts, ToggleAlert } from "@/types/types";
-import { AlertCircle, ToggleLeft } from "lucide-react";
-import { clearLine } from "readline";
+import { createContext, useEffect, useState } from "react";
+import { AppContexts, ToggleAlert, Wallet } from "@/types/types";
+import { AlertCircle } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import { Progress } from "@/components/ui/progress";
 import { BrowserWallet } from "@meshsdk/core";
@@ -23,31 +22,13 @@ export default function App({ Component, pageProps }: AppProps) {
     msg: "",
     alert: false,
   });
+  const [wallet, setWallet] = useState<Wallet>({
+    wallet: undefined,
+    connected: false,
+  });
 
-  // get wallet from localstorage
-  useEffect(() => {
-    const retrievedWlt = localStorage.getItem("wallet");
-    console.log("wallet from local storage : ", retrievedWlt);
-
-    const wlt: BrowserWallet | null = retrievedWlt ? JSON.parse(retrievedWlt) : null;
-    setWallet(wlt);
-  }, []);
-
-  // update persistent wallet state from localstorage
-  useEffect(() => {
-    if (wallet) {
-      localStorage.setItem("wallet", JSON.stringify(wallet));
-      console.log("Updated wallet in localStorage:", wallet);
-    }
-  }, [wallet]);
-
-  // setWallet
-  function toggleWallet(wallet: BrowserWallet) {
-    setWallet(wallet);
-  }
-
-  // ALERT TRIGGER
-  const toggleAlert = (success: "Success" | "Error" | "Alert", msg: string, alert: boolean) => {
+  // alert state handler
+  const toggleAlert = (success: "Success" | "Error" | "Alert", msg: string, alert: boolean): void => {
     setAlert({
       success: success,
       msg: msg,
@@ -55,18 +36,61 @@ export default function App({ Component, pageProps }: AppProps) {
     });
   };
 
-  const toggleLoading = (loading: boolean) => {
+  // loading state handler
+  const toggleLoading = (loading: boolean): void => {
     setLoading(loading);
   };
 
-  // CLEAR ALERT STATE
-  function clearAlert() {
+  // select wallet context
+  async function selectWallet(walletName: string) {
+    try {
+      console.log("wallet name : ", walletName);
+      const wallet = await BrowserWallet.enable(walletName);
+
+      if (wallet) {
+        setWallet({
+          wallet: wallet,
+          connected: false,
+        });
+      }
+    } catch (err) {
+      console.error("Error connecting wallet : ", err);
+    }
+  }
+
+  // connect wallet context
+  function connectWallet(): void {
+    if (wallet.wallet) {
+      setWallet({
+        wallet: wallet.wallet,
+        connected: true,
+      });
+    }
+  }
+
+  // clear alert state
+  function clearAlert(): void {
     setAlert({
       success: "Alert",
       msg: "",
       alert: false,
     });
   }
+
+  // set wallet localstorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const persistedWallet = localStorage.getItem("wallet");
+      if (persistedWallet != null) {
+        const localWallet: Wallet = JSON.parse(persistedWallet);
+
+        setWallet({
+          wallet: localWallet.wallet,
+          connected: localWallet.connected,
+        });
+      }
+    }
+  }, []);
 
   // ALERT TIMEOUT
   useEffect(() => {
@@ -79,11 +103,21 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }, [alert]);
 
+  // handle persistent state updates
+  useEffect(() => {
+    if (wallet.connected) {
+      localStorage.setItem("wallet", JSON.stringify(wallet));
+    }
+  }, [wallet.connected]);
+
   return (
     <AppContext.Provider
       value={{
         toggleAlert,
         toggleLoading,
+        selectWallet,
+        connectWallet,
+        wallet,
       }}
     >
       <SessionProvider>

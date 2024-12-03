@@ -1,5 +1,4 @@
-// NOTE : FIX ALERT
-import { useState, useEffect, use, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/router";
 import { AssetExtended, BrowserWallet } from "@meshsdk/core";
 import { Button } from "@/components/ui/button";
@@ -7,13 +6,9 @@ import { Select } from "@/components/ui/select";
 import { SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import login_wallpaper1 from "../../../public/assets/login_wallpaper1.jpg";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AppContexts, AssetWallet, Wallet } from "../../types/types";
+import { AppContexts, AvailableWallets } from "../../types/types";
 import { AppContext } from "../_app";
-import { signIn, useSession } from "next-auth/react";
 import { loginHandler } from "../../services/authService";
-import { Address } from "cluster";
-import { useDispatch } from "react-redux";
-import { setWallet } from "@/redux/actions";
 
 // Environment variable berisi nama NFT dalam format Hex dan policyID
 const token1 = process.env.NEXT_PUBLIC_TOKEN_1;
@@ -21,17 +16,14 @@ const token2 = process.env.NEXT_PUBLIC_TOKEN_2;
 const token3 = process.env.NEXT_PUBLIC_TOKEN_3;
 
 export default function login() {
-  // redux
-  const dispatch = useDispatch();
-
   // router
   const router = useRouter();
 
   // use contexts
-  const { toggleAlert, toggleLoading } = useContext(AppContext) as AppContexts;
+  const { toggleAlert, toggleLoading, connectWallet, selectWallet, wallet } = useContext(AppContext) as AppContexts;
 
   // states
-  const [availableWallets, setAvailableWallets] = useState<Wallet[]>([]);
+  const [availableWallets, setAvailableWallets] = useState<AvailableWallets[]>([]);
   const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
   const [selectedWallet, setSelectedWallet] = useState<string>("");
   const [nonce, setNonce] = useState<string>("");
@@ -48,25 +40,10 @@ export default function login() {
     }
   }
 
-  // connect wallet
-  async function connectWallet(walletName: string) {
-    try {
-      console.log("wallet name : ", walletName);
-      const wallet = await BrowserWallet.enable(walletName);
-
-      if (wallet) {
-        // update state store
-        dispatch(setWallet(wallet));
-      }
-    } catch (err) {
-      console.error("Error connecting wallet : ", err);
-    }
-  }
-
   // get wallet assets
   async function getWalletAssets() {
     try {
-      const assets = await wallet?.getAssets();
+      const assets = await wallet.wallet!.getAssets();
 
       if (assets?.length != 0) {
         console.log("Wallet assets : ", assets);
@@ -91,14 +68,16 @@ export default function login() {
   }, [availableWallets]);
 
   useEffect(() => {
-    console.log("Wallet : ", wallet);
-  }, [wallet]);
+    if (selectedWallet != "") {
+      selectWallet(selectedWallet);
+    }
+  }, [selectedWallet]);
 
   useEffect(() => {
-    if (selectedWallet != "") {
+    if (wallet.wallet) {
       getWalletAssets();
     }
-  }, [wallet]);
+  }, [wallet.wallet]);
 
   return (
     <div className="text-zinc-800 overflow-x-hidden box-border w-screen h-screen flex justify-center items-center text-sm">
@@ -115,7 +94,6 @@ export default function login() {
             <Select
               value={selectedWallet}
               onValueChange={(e) => {
-                connectWallet(e);
                 setSelectedWallet(e);
               }}
             >
@@ -147,10 +125,10 @@ export default function login() {
 
             <Button
               className="rounded-full w-full mt-3 py-3"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.preventDefault();
 
-                if (wallet == undefined) {
+                if (!wallet.wallet) {
                   toggleAlert("Error", "Wallet is not found.", true);
                   return;
                 } else if (walletAssets?.length == 0) {
@@ -158,7 +136,14 @@ export default function login() {
                   return;
                 }
 
-                loginHandler(wallet!, setNonce, toggleLoading, router);
+                try {
+                  await loginHandler(wallet.wallet, setNonce, toggleLoading, router);
+                  connectWallet();
+                  router.push("/main/dashboard");
+                } catch (err) {
+                  console.error("Login Error : ", err);
+                  toggleAlert("Error", "Login failed", true);
+                }
               }}
             >
               Login

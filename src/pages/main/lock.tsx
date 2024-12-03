@@ -2,7 +2,7 @@ import { BlockfrostProvider, Asset, deserializeAddress, serializePlutusScript, m
 import contractBlueprint from "../../../smart_contract/plutus.json";
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../_app";
-import { AppContexts } from "@/types/types";
+import { AppContexts, Wallet } from "@/types/types";
 import { useWallet } from "@meshsdk/react";
 import { UserRoundPenIcon } from "lucide-react";
 
@@ -13,6 +13,10 @@ const blockFrostAPIKey = process.env.NEXT_PUBLIC_BLOCKFROST_API || "";
 const nodeProvider = new BlockfrostProvider(blockFrostAPIKey!);
 
 export default function Lock() {
+  // get wallet from localstorage
+  const persistedWallet = localStorage.getItem("wallet");
+  const wallet: Wallet | null = persistedWallet != null ? JSON.parse(persistedWallet) : null;
+
   const [amount, setAmount] = useState<number>(0);
 
   // handle deposit
@@ -47,16 +51,20 @@ export default function Lock() {
 
   // get wallet info
   async function getWalletInfo() {
-    console.log(typeof wallet);
-    const utxos = await wallet?.getUtxos();
-    const collateral = await wallet?.getCollateral();
-    const walletAddress = await wallet?.getChangeAddress();
+    if (wallet) {
+      console.log(typeof wallet);
+      const utxos = await wallet?.getUtxos();
+      const collateral = await wallet?.getCollateral();
+      const walletAddress = await wallet?.getChangeAddress();
 
-    console.log("UTXOS : ", utxos);
-    console.log("Collaterals : ", collateral);
-    console.log("Wallet Address : ", walletAddress);
+      console.log("UTXOS : ", utxos);
+      console.log("Collaterals : ", collateral);
+      console.log("Wallet Address : ", walletAddress);
 
-    return { utxos, collateral, walletAddress };
+      return { utxos, collateral, walletAddress };
+    } else {
+      alert("Wallet is null");
+    }
   }
 
   useEffect(() => {

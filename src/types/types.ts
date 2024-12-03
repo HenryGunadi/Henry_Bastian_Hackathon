@@ -1,12 +1,16 @@
-import { SET_WALLET } from "@/redux/actions";
 import { BrowserWallet } from "@meshsdk/core";
 import { Document } from "mongoose";
 
-type Wallet = {
-  id: string;
+type AvailableWallets = {
+  id?: string;
   name: string;
   icon: string;
   version: string;
+};
+
+type Wallet = {
+  wallet: BrowserWallet | undefined;
+  connected: boolean;
 };
 
 type AssetWallet = {
@@ -27,18 +31,12 @@ type LoginPayload = {
   stakeAddress: string;
 };
 
-type initialStates = {
-  wallet: undefined | BrowserWallet;
-};
-
 export interface AppContexts {
   toggleAlert: (success: "Success" | "Alert" | "Error", msg: string, alert: boolean) => void;
   toggleLoading: (loading: boolean) => void;
+  connectWallet: () => void;
+  selectWallet: (walletName: string) => Promise<void>;
+  wallet: Wallet;
 }
 
-export interface WalletAction {
-  type: typeof SET_WALLET;
-  payload: BrowserWallet | undefined;
-}
-
-export type { Wallet, AssetWallet, ToggleAlert, LoginPayload, initialStates };
+export type { Wallet, AssetWallet, ToggleAlert, LoginPayload, AvailableWallets };
