@@ -5,6 +5,7 @@ import { AppContext } from "../_app";
 import { AppContexts, Wallet } from "@/types/types";
 import { useWallet } from "@meshsdk/react";
 import { UserRoundPenIcon } from "lucide-react";
+import e from "express";
 
 // block frost api key
 const blockFrostAPIKey = process.env.NEXT_PUBLIC_BLOCKFROST_API || "";
@@ -13,10 +14,9 @@ const blockFrostAPIKey = process.env.NEXT_PUBLIC_BLOCKFROST_API || "";
 const nodeProvider = new BlockfrostProvider(blockFrostAPIKey!);
 
 export default function Lock() {
-  // get wallet from localstorage
-  const persistedWallet = localStorage.getItem("wallet");
-  const wallet: Wallet | null = persistedWallet != null ? JSON.parse(persistedWallet) : null;
+  const [wallet, setWallet] = useState<Wallet | null>(null);
 
+  // use context
   const [amount, setAmount] = useState<number>(0);
 
   // handle deposit
@@ -51,25 +51,24 @@ export default function Lock() {
 
   // get wallet info
   async function getWalletInfo() {
-    if (wallet) {
-      console.log(typeof wallet);
-      const utxos = await wallet?.getUtxos();
-      const collateral = await wallet?.getCollateral();
-      const walletAddress = await wallet?.getChangeAddress();
+    if (wallet?.wallet) {
+      console.log("get wallet function triggered");
 
-      console.log("UTXOS : ", utxos);
-      console.log("Collaterals : ", collateral);
-      console.log("Wallet Address : ", walletAddress);
-
+      const utxos = await wallet.wallet.getUtxos();
+      const collateral = (await wallet.wallet.getCollateral())[0];
+      const walletAddress = await wallet.wallet.getChangeAddress();
       return { utxos, collateral, walletAddress };
     } else {
-      alert("Wallet is null");
+      console.log("Wallet is undefined");
     }
   }
 
   useEffect(() => {
-    getWalletInfo();
-  }, []);
+    if (wallet?.wallet) {
+      console.log("Wallet in Lock : ", wallet.wallet);
+      getWalletInfo();
+    }
+  }, [wallet]);
 
   return (
     <div>

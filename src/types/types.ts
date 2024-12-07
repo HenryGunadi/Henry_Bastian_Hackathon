@@ -8,11 +8,6 @@ type AvailableWallets = {
   version: string;
 };
 
-type Wallet = {
-  wallet: BrowserWallet | undefined;
-  connected: boolean;
-};
-
 type AssetWallet = {
   unit: string;
   policyId: string;
@@ -34,9 +29,6 @@ type LoginPayload = {
 export interface AppContexts {
   toggleAlert: (success: "Success" | "Alert" | "Error", msg: string, alert: boolean) => void;
   toggleLoading: (loading: boolean) => void;
-  connectWallet: () => void;
-  selectWallet: (walletName: string) => Promise<void>;
-  wallet: Wallet;
 }
 
-export type { Wallet, AssetWallet, ToggleAlert, LoginPayload, AvailableWallets };
+export type { AssetWallet, ToggleAlert, LoginPayload, AvailableWallets };
