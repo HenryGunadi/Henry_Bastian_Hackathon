@@ -78,6 +78,7 @@ test scenario_3() {
     )
 }
 
+// wrong message but signed
 test scenario_4() {
     let datum = Datum {
         owner: #"f4c9f9c4252d86702c2f4c2e49e6648c7cffe3c8f2b6b7d779788f50"

@@ -1,60 +1,71 @@
-import { AppContexts, ToggleAlert } from "@/types/types";
-import React, { createContext, ReactNode, useEffect, useState } from "react";
+import {AppContexts, AppProviderProps, ToggleAlert} from '@/types/types';
+import {BrowserWallet} from '@meshsdk/core';
+import {useRouter} from 'next/router';
+import React, {createContext, ReactNode, useEffect, useState} from 'react';
 
 export const AppContext = createContext<AppContexts | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // states
-  const [loading, setLoading] = useState<boolean>(false);
-  const [alerts, setAlert] = useState<ToggleAlert>({
-    success: "Alert",
-    msg: "",
-    alert: false,
-  });
-  const [walletProvider, setWalletProvide] = useState<string>("");
+export const AppProvider: React.FC<{children: ReactNode; props: AppProviderProps}> = ({children, props}) => {
+	const [wallet, setWallet] = useState<BrowserWallet | null>(null);
+	const [walletProvider, setWalletProvider] = useState<string>('');
 
-  // alert state handler
-  const toggleAlert = (success: "Success" | "Error" | "Alert", msg: string, alert: boolean): void => {
-    setAlert({
-      success: success,
-      msg: msg,
-      alert: alert,
-    });
-  };
+	const router = useRouter();
 
-  // loading state handler
-  const toggleLoading = (loading: boolean): void => {
-    setLoading(loading);
-  };
+	// alert state handler
+	const toggleAlert = (success: 'Success' | 'Error' | 'Alert', msg: string, alert: boolean): void => {
+		props.setAlert({
+			success: success,
+			msg: msg,
+			alert: alert,
+		});
+	};
 
-  // clear alert state
-  function clearAlert(): void {
-    setAlert({
-      success: "Alert",
-      msg: "",
-      alert: false,
-    });
-  }
+	// loading state handler
+	const toggleLoading = (loading: boolean): void => {
+		props.setLoading(loading);
+	};
 
-  // ALERT TIMEOUT
-  useEffect(() => {
-    if (alerts.alert) {
-      const timer = setTimeout(() => {
-        clearAlert();
-      }, 2000);
+	// connect wallet
+	async function connectWallet(): Promise<void> {
+		try {
+			const wlt = await BrowserWallet.enable(walletProvider);
+			setWallet(wlt);
+		} catch (err) {
+			console.error('Error connecting to wallet : ', err);
+		}
+	}
 
-      return () => clearTimeout(timer);
-    }
-  }, [alerts]);
+	useEffect(() => {
+		if (typeof window != undefined) {
+			const walletProv = localStorage.getItem('wallet_provider');
 
-  return (
-    <AppContext.Provider
-      value={{
-        toggleAlert,
-        toggleLoading,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
+			if (walletProv) {
+				setWalletProvider(walletProv);
+				return;
+			}
+
+			console.log('Wallet provider is not selected');
+		}
+	}, []);
+
+	useEffect(() => {
+		if (walletProvider != '') {
+			connectWallet();
+		}
+	}, [walletProvider]);
+
+	return (
+		<AppContext.Provider
+			value={{
+				toggleAlert,
+				toggleLoading,
+				wallet,
+				setWalletProvider,
+				router,
+				connectWallet,
+			}}
+		>
+			{children}
+		</AppContext.Provider>
+	);
 };
