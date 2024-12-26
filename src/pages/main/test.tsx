@@ -15,7 +15,7 @@ const nodeProvider = new BlockfrostProvider(blockfrostApiKey);
 
 console.log("api key : ", blockfrostApiKey);
 
-export default function Lock() {
+export default function LockTesting() {
   const { connected, wallet } = useWallet();
   const [amount, setAmount] = useState(0);
 
