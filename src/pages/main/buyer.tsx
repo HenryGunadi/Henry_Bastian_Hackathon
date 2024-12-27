@@ -1,22 +1,16 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "@/contexts/appContext";
 import { AppContexts } from "@/types/types";
-import Button from "@/components/common/Button";
-import { handleDeposit } from "@/utils/lockUtils";
-import { applyCborEncoding, applyParamsToScript, Asset, BlockfrostProvider, Data, deserializeAddress, mConStr, MeshTxBuilder, resolveDataHash, serializePlutusScript, UTxO } from "@meshsdk/core";
+import { applyParamsToScript, Asset, BlockfrostProvider, Data, deserializeAddress, mConStr, mConStr0, MeshTxBuilder, resolveDataHash, serializePlutusScript, UTxO } from "@meshsdk/core";
 import images from "../../assets/assets";
-import { useWallet } from "@meshsdk/react";
 import contractBlueprint from "../../../smart_contract/plutus.json";
-import { deserialize } from "v8";
 
+// testing seller address
 const sellerAddr: string = "addr_test1qztrf94r78crckxaw6rwxp7vp20gq0setsgmq354uwr3v8arm95m6v6xdzj2yw6p2szjm64c2l00v4f49y3m8yqavjgswf8x02";
+
+// provider
 const blockFrostAPIKey: string = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "";
 const nodeProvider = new BlockfrostProvider(blockFrostAPIKey);
-
-const datumValue: Data = new Map<Data, Data>();
-datumValue.set("price", 100);
-datumValue.set("seller", sellerAddr);
-const txHashParam: string = "c63c38e02a5210e845c16870b099c2071d16fcac6f72fdf7abf45c01ffcaf29b";
 
 export default function Lock() {
   // use context
@@ -26,13 +20,10 @@ export default function Lock() {
   const [amount, setAmount] = useState<number>(0);
   const [balance, setBalance] = useState<Asset[]>([]);
 
-  // handler
+  // submit handler
   function handleSubmitButton() {
-    if (balance.length != 0) {
-      if (parseInt(balance[0].quantity) >= 100) {
-        lockAsset();
-      }
-    }
+    depositFund();
+    console.log("handle submit clicked");
   }
 
   // helpers
@@ -41,44 +32,48 @@ export default function Lock() {
     setBalance(balance);
   }
 
-  async function lockAsset() {
-    try {
-      const utxo = await getUtxoByTxHash(txHashParam);
-      if (utxo === undefined) throw new Error("UTxO not found");
+  // deposit fund
+  async function depositFund() {
+    const assets: Asset[] = [
+      {
+        unit: "lovelace",
+        quantity: "10000000", // 10 ADA
+      },
+    ];
 
-      const redeemerValue: Data = new Map<Data, Data>();
-      redeemerValue.set("constructor", "MBuy");
-      redeemerValue.set("arguments", []);
+    const lockUntilTimeStamp = new Date();
+    lockUntilTimeStamp.setMinutes(lockUntilTimeStamp.getMinutes() + 1);
 
-      // Convert the redeemer data to CBOR
-      const { scriptAddr, scriptCbor } = getScript(contractBlueprint.validators[0].compiledCode);
-      const { utxos, walletAddress, collateral } = await getWalletInfo();
-      const signerHash = deserializeAddress(walletAddress).pubKeyHash;
+    const unsignedTx = await depositFundTxHelper(assets, lockUntilTimeStamp.getTime());
 
-      const lovelaceAmount = (10 * 1000000).toString();
-      const asset: Asset[] = [{ unit: "lovelace", quantity: lovelaceAmount }];
+    const signedTx = await wallet!.signTx(unsignedTx);
+    const txHash = await wallet!.submitTx(signedTx);
 
-      const datumValue: Data = new Map<Data, Data>();
-      datumValue.set("price", 5);
-      datumValue.set("seller", sellerAddr);
+    console.log("txHash", txHash);
+  }
 
-      // build transaction draft
-      const txBuild = new MeshTxBuilder({
-        fetcher: nodeProvider,
-        submitter: nodeProvider,
-        verbose: true,
-      });
-      const txDraft = await txBuild.setNetwork("preprod").changeAddress(walletAddress).selectUtxosFrom(utxos).txOut(sellerAddr, asset).txOutInlineDatumValue(datumValue).complete();
+  // Later fix
+  async function depositFundTxHelper(amount: Asset[], lockUntilTimeStampMs: number): Promise<string> {
+    const { utxos, walletAddress } = await getWalletInfo();
 
-      // sign the transaction
-      const signedTx = await wallet!.signTx(txDraft);
+    const { scriptAddr } = getScript(contractBlueprint.validators[0].compiledCode);
 
-      // submit the transaction
-      const txHash = await wallet!.submitTx(signedTx);
-      alert(`Transaction successful : ${txHash}`);
-    } catch (err) {
-      console.error("Transaction error : ", err);
-    }
+    const { pubKeyHash: ownerPubKeyHash } = deserializeAddress(walletAddress);
+    const { pubKeyHash: beneficiaryPubKeyHash } = deserializeAddress(walletAddress);
+
+    const txBuilder = new MeshTxBuilder({
+      fetcher: nodeProvider,
+      evaluator: nodeProvider,
+      verbose: true,
+    });
+
+    await txBuilder
+      .txOut(scriptAddr, amount)
+      .txOutInlineDatumValue(mConStr0([lockUntilTimeStampMs, ownerPubKeyHash, beneficiaryPubKeyHash]))
+      .changeAddress(walletAddress)
+      .selectUtxosFrom(utxos)
+      .complete();
+    return txBuilder.txHex;
   }
 
   function getScript(blueprintCompiledCode: string, params: string[] = [], version: "V1" | "V2" | "V3" = "V3") {
@@ -94,21 +89,28 @@ export default function Lock() {
     return { utxos, collateral, walletAddress };
   }
 
-  // Fungsi membaca index utxo berdasarkan transaction hash aset yang didepositkan
   async function getUtxoByTxHash(txHash: string): Promise<UTxO> {
     const utxos = await nodeProvider.fetchUTxOs(txHash);
     console.log("Fetched UTxOs:", utxos);
     if (utxos.length === 0) {
       throw new Error("UTxO not found");
     }
+
     return utxos[0];
   }
 
   // useEffects
   useEffect(() => {
-    if (wallet) {
-      getWalletBalance();
-    }
+    const useGetWalletInfo = async () => {
+      try {
+        const { utxos, collateral, walletAddress } = await getWalletInfo();
+
+        console.log("Wallet UTXOS : ", utxos);
+        console.log("Wallet Address : ", walletAddress);
+      } catch (err) {}
+    };
+
+    useGetWalletInfo();
   }, [wallet]);
 
   return (

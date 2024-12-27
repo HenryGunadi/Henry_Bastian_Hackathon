@@ -1,18 +1,23 @@
-name = "aiken-lang/smart_contract"
+name = "meshjs/vesting"
 version = "0.0.0"
 compiler = "v1.1.7"
 plutus = "v3"
 license = "Apache-2.0"
-description = "Aiken contracts for project 'aiken-lang/smart_contract'"
+description = "Aiken contracts for project 'meshjs/vesting'"
 
 [repository]
-user = "aiken-lang"
-project = "smart_contract"
+user = "meshjs"
+project = "vesting"
 platform = "github"
 
 [[dependencies]]
 name = "aiken-lang/stdlib"
-version = "v2.1.0"
+version = "v2"
+source = "github"
+
+[[dependencies]]
+name = "sidan-lab/vodka"
+version = "0.1.0-beta"
 source = "github"
 
 [config]

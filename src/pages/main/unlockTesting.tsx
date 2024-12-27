@@ -1,6 +1,6 @@
 import { useState, ChangeEvent } from "react";
 import { CardanoWallet, useWallet } from "@meshsdk/react";
-import { BlockfrostProvider, UTxO, deserializeAddress, serializePlutusScript, mConStr0, stringToHex, MeshTxBuilder } from "@meshsdk/core";
+import { SLOT_CONFIG_NETWORK, ConStr0, Integer, BuiltinByteString, BlockfrostProvider, UTxO, deserializeAddress, serializePlutusScript, mConStr0, stringToHex, MeshTxBuilder, deserializeDatum, unixTimeToEnclosingSlot } from "@meshsdk/core";
 import { applyParamsToScript } from "@meshsdk/core-csl";
 
 // Integrasi smart-contract
@@ -12,14 +12,17 @@ const blockfrostApiKey = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "";
 // Inisiasi node provider Blockfrost
 const nodeProvider = new BlockfrostProvider(blockfrostApiKey);
 
+// vesting datum type
+export type VestingDatum = ConStr0<[Integer, BuiltinByteString, BuiltinByteString]>;
+
 export default function Home() {
   const { connected, wallet } = useWallet();
-  const [txHash, setTxHash] = useState("");
-  const [refNumber, setRefNumber] = useState("");
+  const [txHashFromDesposit, setTxHashFromDeposit] = useState("");
+  const [refNumber, setRefNumber] = useState<string>("");
 
   function txHashHandler(event: ChangeEvent<HTMLInputElement>): void {
     const value = event.target.value;
-    setTxHash(value);
+    setTxHashFromDeposit(value);
   }
 
   function redeemerHandler(event: ChangeEvent<HTMLInputElement>): void {
@@ -28,68 +31,62 @@ export default function Home() {
   }
 
   function handleWithdraw() {
-    if (!txHash || !refNumber) {
-      alert("Tx Hash atau Reference Number tidak boleh kosong !");
+    if (!txHashFromDesposit) {
+      alert("Tx Hash tidak boleh kosong !");
       return;
     }
-    unlockAssets();
-    console.log("Ref number : ", refNumber);
+    withdrawFundTx();
   }
 
-  async function unlockAssets() {
-    try {
-      // Mendapatkan index utxo berdasarkan transaction hash aset yang didepostikan di contract address
-      const utxo = await getUtxoByTxHash(txHash);
-      if (utxo === undefined) throw new Error("UTxO not found");
+  async function withdrawFundTx() {
+    const utxo = await getUtxoByTxHash(txHashFromDesposit);
 
-      // Mendapatkan script smart-contract dalam format CBOR
-      const { scriptCbor } = getScript(contractBlueprint.validators[0].compiledCode);
+    if (utxo === undefined) throw new Error("UTxO not found");
 
-      // Mendapatkan index utxo, alamat wallet, dan kolateral
-      const { utxos, walletAddress, collateral } = await getWalletInfo();
+    const unsignedTx = await withdrawFundTxHelper(utxo);
 
-      // Mendapatkan pub key hash sebagai persetujuan user untuk menandatangi transaksi
-      const signerHash = deserializeAddress(walletAddress).pubKeyHash;
+    const signedTx = await wallet.signTx(unsignedTx);
+    const txHash = await wallet.submitTx(signedTx);
+    console.log("txHash", txHash);
+  }
 
-      // Membuat draft transaksi
-      const txBuild = new MeshTxBuilder({
-        fetcher: nodeProvider,
-        evaluator: nodeProvider,
-        verbose: true,
-      });
-      const txDraft = await txBuild
-        .setNetwork("preprod")
-        .spendingPlutusScript("V3")
-        .txIn(utxo.input.txHash, utxo.input.outputIndex, utxo.output.amount, utxo.output.address)
-        .txInScript(scriptCbor)
-        .txInRedeemerValue(mConStr0([stringToHex(refNumber)]))
-        .txInDatumValue(mConStr0([signerHash]))
-        .requiredSignerHash(signerHash)
-        .changeAddress(walletAddress)
-        .txInCollateral(collateral.input.txHash, collateral.input.outputIndex, collateral.output.amount, collateral.output.address)
-        .selectUtxosFrom(utxos)
-        .complete();
+  async function withdrawFundTxHelper(vestingUtxo: UTxO): Promise<string> {
+    const { utxos, walletAddress, collateral } = await getWalletInfo();
+    const { input: collateralInput, output: collateralOutput } = collateral;
 
-      console.log("String to hex : ", [stringToHex(refNumber)]);
+    const { scriptAddr, scriptCbor } = getScript(contractBlueprint.validators[0].compiledCode);
 
-      // Menandatangani transaksi
-      const signedTx = await wallet.signTx(txDraft);
+    const { pubKeyHash } = deserializeAddress(walletAddress);
 
-      // Submit transaksi dan mendapatkan transaksi hash
-      const txHash_ = await wallet.submitTx(signedTx);
-      alert(`Transaction successful : ${txHash_}`);
-      return;
-    } catch (error) {
-      // Error handling jika transaksi gagal
-      alert(`Transaction failed ${error}`);
-      return;
-    }
+    const datum = deserializeDatum<VestingDatum>(vestingUtxo.output.plutusData!);
+
+    const invalidBefore = unixTimeToEnclosingSlot(Math.min(datum.fields[0].int as number, Date.now() - 15000), SLOT_CONFIG_NETWORK.preprod) + 1;
+
+    const txBuilder = new MeshTxBuilder({
+      fetcher: nodeProvider,
+      evaluator: nodeProvider,
+      verbose: true,
+    });
+
+    await txBuilder
+      .spendingPlutusScript("V3")
+      .txIn(vestingUtxo.input.txHash, vestingUtxo.input.outputIndex, vestingUtxo.output.amount, scriptAddr)
+      .spendingReferenceTxInInlineDatumPresent()
+      .spendingReferenceTxInRedeemerValue("")
+      .txInScript(scriptCbor)
+      .txOut(walletAddress, [])
+      .txInCollateral(collateralInput.txHash, collateralInput.outputIndex, collateralOutput.amount, collateralOutput.address)
+      .invalidBefore(invalidBefore)
+      .requiredSignerHash(pubKeyHash)
+      .changeAddress(walletAddress)
+      .selectUtxosFrom(utxos)
+      .complete();
+    return txBuilder.txHex;
   }
 
   // Fungsi membaca index utxo berdasarkan transaction hash aset yang didepositkan
   async function getUtxoByTxHash(txHash: string): Promise<UTxO> {
     const utxos = await nodeProvider.fetchUTxOs(txHash);
-    console.log("Fetched UTxOs:", utxos);
     if (utxos.length === 0) {
       throw new Error("UTxO not found");
     }
