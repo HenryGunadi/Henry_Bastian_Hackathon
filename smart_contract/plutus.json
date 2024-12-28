@@ -12,6 +12,31 @@
   },
   "validators": [
     {
+      "title": "market.vesting.spend",
+      "datum": {
+        "title": "datum_opt",
+        "schema": {
+          "$ref": "#/definitions/market~1VestingDatum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer_opt",
+        "schema": {
+          "$ref": "#/definitions/Option$market~1Redeemer"
+        }
+      },
+      "compiledCode": "590234010100323232323232322533300232323232325332330083001300937540042646644646464a66601c600600226464a666026602c0042a666020600a60226ea80044c8c94ccc054c06000801858dd7180b00098091baa00116163014001301037540122a66601c600e0022a66602260206ea80240085858c038dd50040a999806180098069baa002132533300d3002300e3754010264646464a666022a666022660026eb0c008c04cdd50069bae301630173013375400a200629405288a999808998009bac30023013375401a6eb8c058c05cc05cc04cdd500289991191919299980b1807980b9baa00115333016300f3017375460366038004266e20010dd6980d980c1baa0011337120086eb4c06cc060dd50008a50301a00133018301900133018333014300d3015375460326034002980103d87a80004c0103d87980004bd70180a9baa300630153754004602c602e602e602e602e602e602e602e60266ea8034dd6980218099baa00514a044646600200200644a66602e00229404cc894ccc058cdc78010028a51133004004001375c603200260340024602a602c602c602c602c602c602c602c602c00266e3cdd7180098081baa3013301037540129112434373938396332642d656535382d343063392d613530312d6264303536373730653365610023013001163011300e37540042c6e1d2000300e001300e300f001300a37540046e1d200216300b300c003300a002300900230090013004375400229309b2b2b9a5573aaae7955cfaba05742ae881",
+      "hash": "077e56454a02f0983c5029d6d5a54c4479c8db4eb75bf10def0b8794"
+    },
+    {
+      "title": "market.vesting.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "590234010100323232323232322533300232323232325332330083001300937540042646644646464a66601c600600226464a666026602c0042a666020600a60226ea80044c8c94ccc054c06000801858dd7180b00098091baa00116163014001301037540122a66601c600e0022a66602260206ea80240085858c038dd50040a999806180098069baa002132533300d3002300e3754010264646464a666022a666022660026eb0c008c04cdd50069bae301630173013375400a200629405288a999808998009bac30023013375401a6eb8c058c05cc05cc04cdd500289991191919299980b1807980b9baa00115333016300f3017375460366038004266e20010dd6980d980c1baa0011337120086eb4c06cc060dd50008a50301a00133018301900133018333014300d3015375460326034002980103d87a80004c0103d87980004bd70180a9baa300630153754004602c602e602e602e602e602e602e602e60266ea8034dd6980218099baa00514a044646600200200644a66602e00229404cc894ccc058cdc78010028a51133004004001375c603200260340024602a602c602c602c602c602c602c602c602c00266e3cdd7180098081baa3013301037540129112434373938396332642d656535382d343063392d613530312d6264303536373730653365610023013001163011300e37540042c6e1d2000300e001300e300f001300a37540046e1d200216300b300c003300a002300900230090013004375400229309b2b2b9a5573aaae7955cfaba05742ae881",
+      "hash": "077e56454a02f0983c5029d6d5a54c4479c8db4eb75bf10def0b8794"
+    },
+    {
       "title": "vesting.vesting.spend",
       "datum": {
         "title": "datum_opt",
@@ -47,6 +72,72 @@
     },
     "Int": {
       "dataType": "integer"
+    },
+    "Option$market/Redeemer": {
+      "title": "Option",
+      "anyOf": [
+        {
+          "title": "Some",
+          "description": "An optional value.",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "$ref": "#/definitions/market~1Redeemer"
+            }
+          ]
+        },
+        {
+          "title": "None",
+          "description": "Nothing.",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": []
+        }
+      ]
+    },
+    "market/Redeemer": {
+      "title": "Redeemer",
+      "anyOf": [
+        {
+          "title": "Redeemer",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "withdraw_key",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    },
+    "market/VestingDatum": {
+      "title": "VestingDatum",
+      "anyOf": [
+        {
+          "title": "VestingDatum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "lock_until",
+              "description": "POSIX time in milliseconds, e.g. 1672843961000",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "owner",
+              "description": "Owner's credentials",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "beneficiary",
+              "description": "Beneficiary's credentials",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
     },
     "vesting/VestingDatum": {
       "title": "VestingDatum",
