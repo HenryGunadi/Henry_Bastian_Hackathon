@@ -1,24 +1,27 @@
-import multer from "multer";
+import multer from 'multer';
+import dotenv from 'dotenv';
 
-const imageUploadPath = "D:/CodingHenry/Henry_Bastian_Hackathon/public/assets";
+dotenv.config();
+
+const imageUploadPath: string = process.env.UPLOAD_PATH || '';
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, imageUploadPath);
-  },
-  filename: function (req, file, cb) {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0");
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const year = now.getFullYear();
+	destination: function (req, file, cb) {
+		cb(null, imageUploadPath);
+	},
+	filename: function (req, file, cb) {
+		const now = new Date();
+		const day = String(now.getDate()).padStart(2, '0');
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const year = now.getFullYear();
 
-    const formattedDate = `${day}-${month}-${year}`;
-    const filePath = `${file.fieldname}_date_${formattedDate}_${file.originalname}`;
+		const formattedDate = `${day}-${month}-${year}`;
+		const filePath = `${file.fieldname}_date_${formattedDate}_${file.originalname}`;
 
-    cb(null, filePath);
-  },
+		cb(null, filePath);
+	},
 });
 
-const multerMiddleware = multer({ storage: storage });
+const multerMiddleware = multer({storage: storage});
 
 export default multerMiddleware;
