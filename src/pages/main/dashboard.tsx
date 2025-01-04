@@ -1,47 +1,40 @@
-import {authenticateUser} from '@/services/authService';
-import dotenv from 'dotenv';
-import {useRouter} from 'next/router';
-import {useContext, useEffect, useState} from 'react';
-import {AppContexts} from '@/types/types';
-import {BrowserWallet} from '@meshsdk/core';
-import {AppContext} from '@/contexts/appContext';
+// import { authenticateUser } from "@/services/authService";
+import dotenv from "dotenv";
+import { useRouter } from "next/router";
+import { useContext, useEffect, useState } from "react";
+import { AppContexts } from "@/types/types";
+import { BrowserWallet } from "@meshsdk/core";
+import { AppContext } from "@/contexts/appContext";
+import axios from "axios";
+import { getRequest } from "@/utils/dashboardReq";
 
 dotenv.config();
-const dashboardMainAPI = 'http://localhost:8080/users/dashboard';
+
+// API Urls
+const dashboardMainAPI = "http://localhost:8000/users/dashboard";
 
 export default function dashboard() {
-	// states
-	const [validated, setValidated] = useState<boolean>(false);
+  // states
+  const [validated, setValidated] = useState<boolean>(false);
+  const [dashboardData, setDashboardData] = useState<[]>([]);
 
-	// use contexts
-	const {toggleLoading} = useContext(AppContext) as AppContexts;
+  // use contexts
+  const { toggleLoading } = useContext(AppContext) as AppContexts;
 
-	// router
-	const router = useRouter();
+  // router
+  const router = useRouter();
 
-	useEffect(() => {
-		const checkAuthenticaion = async () => {
-			const authenticated = await authenticateUser(dashboardMainAPI);
+  useEffect(() => {
+    getRequest<any>(dashboardMainAPI, setDashboardData);
+  }, []);
 
-			console.log('Authenticated : ', authenticated);
+  if (!validated) {
+    return <div></div>;
+  }
 
-			if (!authenticated) {
-				router.push('/main/login');
-			} else {
-				setValidated(true);
-			}
-		};
-
-		checkAuthenticaion();
-	}, []);
-
-	if (!validated) {
-		return <div></div>;
-	}
-
-	return (
-		<div>
-			<h1>Dashboard</h1>
-		</div>
-	);
+  return (
+    <div>
+      <h1>Dashboard</h1>
+    </div>
+  );
 }

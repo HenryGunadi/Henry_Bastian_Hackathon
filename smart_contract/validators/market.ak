@@ -26,13 +26,13 @@ validator vesting {
     _input: OutputReference,
     tx: Transaction,
   ) {
-    // In principle, scripts can be used for different purpose (e.g. minting
-    // assets). Here we make sure it's only used when 'spending' from a eUTxO
+    
     expect Some(datum) = datum_opt
     expect Some(redeemer) = redeemer_opt
 
     trace @"redeemer": string.from_bytearray(redeemer.withdraw_key)
-    let must_have_key = redeemer.withdraw_key == "47989c2d-ee58-40c9-a501-bd056770e3ea"
+
+    let must_have_key = redeemer.withdraw_key == "hello"
 
     or {
       key_signed(tx.extra_signatories, datum.owner) && must_have_key,

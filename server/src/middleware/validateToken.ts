@@ -1,34 +1,29 @@
-import {NextFunction, Request, Response} from 'express';
-import jwt, {JsonWebTokenError} from 'jsonwebtoken';
-import dotenv from 'dotenv';
-import BadRequestError from '../classes/BadRequestError';
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import { NextFunction, Request, Response } from "express";
+import { User } from "../types/types";
 
 dotenv.config();
 
 export default async function validateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-	const authCookie = req.cookies['auth_cookie'];
-	const secret = process.env.ACCESS_TOKEN_SECRET || '';
-	const error = new BadRequestError();
+  const token = req.cookies?.auth_cookie;
+  const secret = process.env.ACCESS_TOKEN_SECRET || "";
 
-	console.log('auth cookie : ', authCookie);
+  console.log("Token from cookie : ", req.cookies?.auth_cookie);
 
-	if (authCookie == undefined) {
-		error.statusCode = 401;
-		error.message = 'token not found';
-		next(error);
-	}
-	if (secret == '') {
-		error.statusCode = 500;
-		error.message = 'internal server error';
-		next(error);
-	}
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized missing token" });
+    return;
+  }
 
-	// If there is a cookie, verify it
-	jwt.verify(authCookie!, secret, (err: JsonWebTokenError | null) => {
-		// If there is an error, return an error
-		if (err) return res.sendStatus(403);
+  jwt.verify(token, secret, (err: any, decoded: any) => {
+    if (err) {
+      return res.status(401).json({ error: "User is not authorized" });
+    }
 
-		// If there is no error, continue the execution
-		next();
-	});
+    req.user = decoded as User;
+
+    console.log("User is authenticated");
+    next();
+  });
 }

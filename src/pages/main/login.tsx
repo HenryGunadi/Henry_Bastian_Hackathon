@@ -6,8 +6,9 @@ import { SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, Sel
 import login_wallpaper1 from "../../../public/assets/login_wallpaper1.jpg";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppContexts, AvailableWallets } from "../../types/types";
-import { loginHandler } from "../../services/authService";
+import { loginHandler, validateSignature } from "../../utils/authService";
 import { AppContext } from "@/contexts/appContext";
+import { ChartNoAxesColumnIcon } from "lucide-react";
 
 // Environment variable berisi nama NFT dalam format Hex dan policyID
 const token1 = process.env.NEXT_PUBLIC_TOKEN_1;
@@ -22,7 +23,6 @@ export default function login() {
   const [availableWallets, setAvailableWallets] = useState<AvailableWallets[]>([]);
   const [walletAssets, setWalletAssets] = useState<AssetExtended[] | undefined>([]);
   const [selectedWallet, setSelectedWallet] = useState<string>("");
-  const [nonce, setNonce] = useState<string>("");
 
   // FUNCTIONS
   // get available wallets
@@ -116,26 +116,41 @@ export default function login() {
             <Button
               className="rounded-full w-full mt-3 py-3"
               onClick={async (e) => {
-                e.preventDefault();
-
                 if (!wallet) {
-                  toggleAlert("Error", "Wallet is not found.", true);
-                  return;
-                } else if (walletAssets?.length == 0) {
-                  toggleAlert("Error", "Assets not found", true);
+                  toggleAlert("Error", "Wallet is not found", true);
                   return;
                 }
 
                 try {
-                  await loginHandler(wallet, setNonce, toggleLoading, selectedWallet);
-                  router.push("/main/dashboard");
+                  e.preventDefault();
+
+                  await loginHandler(wallet, toggleLoading, toggleAlert, selectedWallet, "user", walletAssets, router);
                 } catch (err) {
-                  console.error("Login Error : ", err);
-                  toggleAlert("Error", "Login failed", true);
+                  console.error("Login error : ", err);
                 }
               }}
             >
-              Login
+              Login as user
+            </Button>
+
+            <Button
+              className="rounded-full w-full mt-3 py-3"
+              onClick={async (e) => {
+                if (!wallet) {
+                  toggleAlert("Error", "Wallet is not found", true);
+                  return;
+                }
+
+                try {
+                  e.preventDefault();
+
+                  await loginHandler(wallet, toggleLoading, toggleAlert, selectedWallet, "seller", walletAssets, router);
+                } catch (err) {
+                  console.error("Login error : ", err);
+                }
+              }}
+            >
+              Login as seller
             </Button>
           </div>
         </form>

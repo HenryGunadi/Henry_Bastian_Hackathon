@@ -1,64 +1,56 @@
-import mongoose from 'mongoose';
-import {UserDoc} from '../../db/models/user';
-import {UserStoreInterface} from '../types/types';
+import mongoose from "mongoose";
+import { UserDoc } from "../../db/models/user";
+import { UserStoreInterface } from "../types/types";
 
 class UserStore implements UserStoreInterface {
-	// attributes
-	private userModel: mongoose.Model<UserDoc>;
+  // attributes
+  private userModel: mongoose.Model<UserDoc>;
 
-	// constructore
-	constructor(userModel: mongoose.Model<UserDoc>) {
-		this.userModel = userModel;
-	}
+  // constructore
+  constructor(userModel: mongoose.Model<UserDoc>) {
+    this.userModel = userModel;
+  }
 
-	// Methods
-	// Get single user
-	async findUserByStakeAddress(stakeAddress: string): Promise<UserDoc | null> {
-		let user: UserDoc | null = null;
+  // Methods
+  // Get single user
+  async findUserByStakeAddress(stakeAddress: string): Promise<UserDoc | null> {
+    let user: UserDoc | null = null;
 
-		try {
-			user = await this.userModel.findOne({stakeAddress: stakeAddress});
+    try {
+      user = await this.userModel.findOne({ stakeAddress: stakeAddress });
 
-			if (user) {
-				console.log('user found : ', user);
-			} else {
-				console.log('user not found.');
-			}
-		} catch (err) {
-			console.error('Error finding user : ', err);
-		}
+      if (!user) {
+        console.log("User not found");
+      }
 
-		return user;
-	}
+      return user;
+    } catch (err) {
+      console.error("Error finding user : ", err);
+      return null;
+    }
+  }
 
-	// create user
-	async insertUser(user: UserDoc): Promise<void> {
-		try {
-			const newUser = new this.userModel(user);
-			const savedUser = await newUser.save();
+  // updateUser
+  async updateUser(field: string, stakeAddress: string, updateValue: any): Promise<void> {
+    try {
+      const udpateObject = { [field]: updateValue };
+      let result: mongoose.UpdateWriteOpResult;
 
-			console.log('User added : ', savedUser);
-		} catch (err) {
-			console.error('error inserting new user : ', err);
-		}
-	}
+      if (field === "roles") {
+        result = await this.userModel.updateOne({ stakeAddress: stakeAddress }, { $addToSet: udpateObject });
+      } else {
+        result = await this.userModel.updateOne({ stakeAddress: stakeAddress }, { $set: udpateObject });
+      }
 
-	// updateUser
-	async updateUser(field: string, stakeAddress: string, updateValue: any): Promise<void> {
-		try {
-			const udpateObject = {[field]: updateValue};
-
-			const result = await this.userModel.updateOne({stakeAddress: stakeAddress}, {$set: udpateObject});
-
-			if (result.modifiedCount > 0) {
-				console.log('User field updated.');
-			} else {
-				console.log('No matching user found or no changes made');
-			}
-		} catch (err) {
-			console.error('error updating user : ', err);
-		}
-	}
+      if (result.modifiedCount > 0) {
+        console.log("User field updated.");
+      } else {
+        console.log("No matching user found or no changes made");
+      }
+    } catch (err) {
+      console.error("error updating user : ", err);
+    }
+  }
 }
 
 export default UserStore;
