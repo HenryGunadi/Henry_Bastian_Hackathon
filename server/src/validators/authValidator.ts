@@ -1,6 +1,3 @@
-import {body} from 'express-validator';
+import { body } from "express-validator";
 
-export const loginValidator = [
-	body('stakeAddress', 'stakeAddress is empty').not().isEmpty(),
-	body('stakeAddress', 'Invalid type').isString(),
-];
+export const loginValidator = [body("stake_addr", "stakeAddress is empty").not().isEmpty(), body("stake_addr", "Invalid type").isString()];

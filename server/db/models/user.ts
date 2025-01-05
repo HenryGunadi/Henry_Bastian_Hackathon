@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 // typescript schemas
 export interface UserDoc extends Document {
   id: string;
-  stakeAddress: string;
+  stake_addr: string;
   nonce: string;
   verified: boolean;
   roles: string[];
@@ -11,7 +11,7 @@ export interface UserDoc extends Document {
 
 // mongoDB schemas
 const userSchema = new Schema<UserDoc>({
-  stakeAddress: { type: String, required: true },
+  stake_addr: { type: String, required: true },
   nonce: { type: String, required: true },
   verified: { type: Boolean, required: true },
   roles: { type: [String], required: true },

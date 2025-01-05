@@ -21,6 +21,7 @@ export default async function validateToken(req: Request, res: Response, next: N
       return res.status(401).json({ error: "User is not authorized" });
     }
 
+    console.log("DECODED USER : ", decoded);
     req.user = decoded as User;
 
     console.log("User is authenticated");
